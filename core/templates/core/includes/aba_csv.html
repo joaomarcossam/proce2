@@ -1,0 +1,13 @@
+<div class="tab-pane fade" id="csv" role="tabpanel">
+    <div class="alert alert-info">
+        <small>O arquivo deve conter as colunas: <strong>CAAE, EmailPesq, NomePesq, Titulo, Descricao</strong></small>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Selecione o arquivo CSV</label>
+            <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Carregar Planilha</button>
+    </form>
+</div>

@@ -1,87 +1,162 @@
-{% extends 'core/base.html' %} {% block title %}Dashboard Gestor{% endblock %} {% block content %}
-    <h2>Dashboard do Gestor</h2>
+{% extends 'core/base.html' %}
 
-    <section>
-        <h3>Projetos Aguardando Designação de Relator</h3>
-        {% if projetos_para_designar %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Título / CAAE</th> 
-                        <th>Pesquisador</th>   
-                        <th>Submetido em</th>
-                        <th>Ação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for projeto in projetos_para_designar %}
-                        <tr>
-                            <td>
-                                <strong>{{ projeto.titulo }}</strong><br>
-                                <small>CAAE: {{ projeto.caae }}</small>
-                            </td>
-                            <td>{{ projeto.pesquisador.nome }}</td> 
-                            <td>{{ projeto.data_submissao|date:"d/m/Y" }}</td>
-                            <td><a href="{% url 'designar_relator' projeto.pk %}">Designar Relator</a></td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>Nenhum projeto novo aguardando designação.</p>
-        {% endif %}
-    </section>
+{% block title %}Dashboard Gestor{% endblock %}
 
-    <section>
-        <h3>Projetos em Análise (Aguardando Parecer)</h3>
-        {% if projetos_em_analise %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Título</th>
-                        <th>Relator</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for projeto in projetos_em_analise %}
-                    <tr>
-                        <td><a href="{% url 'detalhe_projeto' projeto.pk %}">{{ projeto.titulo }}</a></td>
-                        <td>{{ projeto.relator_designado.username }}</td>
-                        <td>{{ projeto.get_status_display }}</td> </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>Nenhum projeto em análise no momento.</p>
-        {% endif %}
-    </section>
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Painel do Gestor</h2>
+    <div>
+        <a href="{% url 'cadastrar_relator' %}" class="btn btn-outline-primary me-2">
+            <i class="bi bi-person-plus"></i> Novo Relator
+        </a>
+        <a href="{% url 'cadastrar_projeto' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Cadastrar Novo Projeto
+        </a>
+    </div>
+</div>
 
-    <section>
-        <h3>Projetos Concluídos (Aprovados/Reprovados)</h3>
-        {% if projetos_concluidos %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Título</th>
-                        <th>Relator</th>
-                        <th>Status Final</th>
-                        <th>Ação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for projeto in projetos_concluidos %}
-                    <tr>
-                        <td>{{ projeto.titulo }}</td>
-                        <td>{{ projeto.relator_designado.username }}</td>
-                        <td>{{ projeto.get_status_display }}</td>
-                        <td><a href="{% url 'detalhe_projeto' projeto.pk %}">Ver Detalhes</a></td>
-                    </tr>
+<!-- NAVEGAÇÃO POR ABAS -->
+<ul class="nav nav-tabs mb-4" id="gestorTab" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" id="projetos-tab" data-bs-toggle="tab" data-bs-target="#projetos" type="button">
+            <i class="bi bi-folder2-open"></i> Gestão de Projetos
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="relatores-tab" data-bs-toggle="tab" data-bs-target="#relatores" type="button">
+            <i class="bi bi-people"></i> Gestão de Relatores
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="gestorTabContent">
+    
+    <!-- ABA 1: PROJETOS -->
+    <div class="tab-pane fade show active" id="projetos" role="tabpanel">
+        
+        <!-- Busca -->
+        <div class="card mb-4 bg-light">
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <select id="filterField" class="form-select">
+                            <option value="all" selected>Buscar em Todos</option>
+                            <option value="titulo">Nome do Projeto</option>
+                            <option value="caae">CAAE</option>
+                            <option value="pesquisador">Pesquisador</option>
+                            <option value="relator_nome">Nome do Relator</option>
+                            <option value="relator_email">E-mail do Relator</option>
+                        </select>
+                    </div>
+                    <div class="col-md-9">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Digite para filtrar...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sub-Abas -->
+        <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pills-aguardando">Aguardando <span class="badge bg-secondary ms-1">{{ projetos_para_designar|length }}</span></button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-analise">Em Análise <span class="badge bg-secondary ms-1">{{ projetos_em_analise|length }}</span></button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-concluidos">Concluídos <span class="badge bg-secondary ms-1">{{ projetos_concluidos|length }}</span></button></li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- TABELA 1: AGUARDANDO -->
+            <div class="tab-pane fade show active" id="pills-aguardando">
+                {% include "core/includes/tabela_projetos.html" with lista_projetos=projetos_para_designar titulo="Aguardando Designação" cor="warning" tipo="aguardando" msg_vazia="Nenhum projeto novo." %}
+            </div>
+
+            <!-- TABELA 2: EM ANÁLISE -->
+            <div class="tab-pane fade" id="pills-analise">
+                {% include "core/includes/tabela_projetos.html" with lista_projetos=projetos_em_analise titulo="Em Análise" cor="info" tipo="analise" msg_vazia="Nenhum projeto em análise." %}
+            </div>
+
+            <!-- TABELA 3: CONCLUÍDOS -->
+            <div class="tab-pane fade" id="pills-concluidos">
+                {% include "core/includes/tabela_projetos.html" with lista_projetos=projetos_concluidos titulo="Concluídos" cor="success" tipo="concluido" msg_vazia="Nenhum projeto concluído." %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA 2: RELATORES  -->
+    <div class="tab-pane fade" id="relatores" role="tabpanel">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <strong>Visão Geral</strong>
+                <a href="{% url 'exportar_relatores' %}" class="btn btn-light btn-sm text-primary"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar Excel</a>
+            </div>
+            <div class="card-body">
+                <input type="text" id="searchRelatorInput" class="form-control mb-3" placeholder="Filtrar relator...">
+                
+                <div class="accordion" id="accordionRelatores">
+                    {% for relator in relatores_stats %}
+                    <div class="accordion-item relator-item">
+                        <h2 class="accordion-header" id="heading{{ relator.id }}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ relator.id }}">
+                                <span class="fw-bold relator-name">{{ relator.first_name|default:relator.username }}</span>
+                                <span class="badge bg-secondary ms-2">{{ relator.projetos_designados.count }}</span>
+                                <span class="ms-2 text-muted small relator-email">({{ relator.email }})</span>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ relator.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionRelatores">
+                            <div class="accordion-body">
+                                {% if relator.projetos_designados.all %}
+                                    <ul class="list-group">
+                                    {% for projeto in relator.projetos_designados.all %}
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <span><strong>{{ projeto.titulo }}</strong> <small>({{ projeto.get_status_display }})</small></span>
+                                            <a href="{% url 'detalhe_projeto' projeto.id %}" class="btn btn-sm btn-outline-primary">Ver</a>
+                                        </li>
+                                    {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="text-muted mb-0">Nenhum projeto.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                        <p class="text-muted text-center mb-0">Nenhum relator.</p>
                     {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>Nenhum projeto concluído ainda.</p>
-        {% endif %}
-    </section>    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterProjects() {
+        let filterValue = document.getElementById("searchInput").value.toLowerCase();
+        let filterField = document.getElementById("filterField").value;
+        let tables = document.querySelectorAll('.searchable-table');
+
+        tables.forEach(table => {
+            let rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                let showRow = false;
+                if (filterField === 'all') {
+                    if (row.innerText.toLowerCase().includes(filterValue)) showRow = true;
+                } else {
+                    let dataValue = row.getAttribute('data-' + filterField);
+                    if (dataValue && dataValue.includes(filterValue)) showRow = true;
+                }
+                row.style.display = showRow ? '' : 'none';
+            });
+        });
+    }
+    document.getElementById("searchInput").addEventListener("keyup", filterProjects);
+    document.getElementById("filterField").addEventListener("change", filterProjects);
+
+    document.getElementById('searchRelatorInput').addEventListener('keyup', function() {
+        let filter = this.value.toLowerCase();
+        let items = document.querySelectorAll('.relator-item');
+        items.forEach(item => {
+            let nome = item.querySelector('.relator-name').innerText.toLowerCase();
+            let email = item.querySelector('.relator-email').innerText.toLowerCase();
+            item.style.display = (nome.includes(filter) || email.includes(filter)) ? '' : 'none';
+        });
+    });
+</script>
 {% endblock %}

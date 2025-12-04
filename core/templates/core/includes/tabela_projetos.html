@@ -1,0 +1,83 @@
+<div class="card mb-4 border-{{ cor }}">
+    <div class="card-header bg-{{ cor }} {% if cor == 'warning' %}text-dark{% else %}text-white{% endif %}">
+        <strong>{{ titulo }}</strong>
+    </div>
+    <div class="card-body p-0">
+        {% if lista_projetos %}
+            <table class="table table-hover mb-0 searchable-table">
+                <thead>
+                    <tr>
+                        <th>Título / CAAE</th>
+                        <!-- Cabeçalho Dinâmico -->
+                        {% if tipo == 'aguardando' %}
+                            <th>Pesquisador</th>
+                        {% else %}
+                            <th>Relator</th>
+                        {% endif %}
+                        
+                        <th>Submissão</th>
+                        
+                        {% if tipo == 'concluido' %}
+                            <th>Resultado</th>
+                            <th>Data</th>
+                        {% else %}
+                            <th>Ação</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for projeto in lista_projetos %}
+                    <tr data-titulo="{{ projeto.titulo|lower }}" 
+                        data-caae="{{ projeto.caae|lower }}"
+                        data-pesquisador="{{ projeto.pesquisador.nome|lower }}"
+                        
+                        {# CORREÇÃO AQUI: Verifica se relator existe antes de acessar #}
+                        data-relator-nome="{% if projeto.relator_designado %}{{ projeto.relator_designado.first_name|default:projeto.relator_designado.username|lower }}{% endif %}"
+                        data-relator-email="{% if projeto.relator_designado %}{{ projeto.relator_designado.email|lower }}{% endif %}">
+                        
+                        <td>
+                            <strong><a href="{% url 'detalhe_projeto' projeto.id %}">{{ projeto.titulo }}</a></strong><br>
+                            <small class="text-muted">{{ projeto.caae }}</small>
+                        </td>
+
+                        <!-- Coluna Pessoa Dinâmica -->
+                        <td>
+                            {% if tipo == 'aguardando' %}
+                                {{ projeto.pesquisador.nome }}
+                            {% else %}
+                                {% if projeto.relator_designado %}
+                                    {{ projeto.relator_designado.first_name|default:projeto.relator_designado.username }}<br>
+                                    <small class="text-muted">{{ projeto.relator_designado.email }}</small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+
+                        <td>{{ projeto.data_submissao|date:"d/m/Y" }}</td>
+
+                        <!-- Coluna Ação/Resultado Dinâmica -->
+                        <td>
+                            {% if tipo == 'aguardando' %}
+                                <a href="{% url 'designar_relator' projeto.id %}" class="btn btn-sm btn-outline-dark">Designar Relator</a>
+                            {% elif tipo == 'analise' %}
+                                <a href="{% url 'designar_relator' projeto.id %}" class="btn btn-sm btn-outline-secondary">Alterar Relator</a>
+                            {% elif tipo == 'concluido' %}
+                                {% if projeto.status == 'aprovado' %}
+                                    <span class="badge bg-success">Aprovado</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Reprovado</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ projeto.data_aprovacao|default:"-" }}</td>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="p-3 text-muted text-center">{{ msg_vazia }}</div>
+        {% endif %}
+    </div>
+</div>
