@@ -1,20 +1,25 @@
 {% extends 'core/base.html' %}
-
-{% block title %}Dar Parecer do Projeto{% endblock %}
-
+{% block title %}Emitir Parecer{% endblock %}
 {% block content %}
-    <h2>Dar Parecer</h2>
-    <hr>
-    
-    <h3>Projeto: {{ projeto.titulo }}</h3>
-    <p><strong>Descrição:</strong> {{ projeto.descricao }}</p>
-    <p><strong>Submetido em:</strong> {{ projeto.data_submissao|date:"d/m/Y" }}</p>
-
-    <form method="post" style="margin-top: 20px;">
-        {% csrf_token %}
-        
-        {{ form.as_p }}
-
-        <button type="submit">Enviar Parecer</button>
-    </form>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h3>Emitir Parecer</h3>
+            <div class="alert alert-light border">
+                <strong>Projeto:</strong> {{ projeto.titulo }}<br>
+                <strong>CAAE:</strong> {{ projeto.caae }}<br>
+                {% if projeto.arquivo_pdf %}
+                    <a href="{{ projeto.arquivo_pdf.url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">Ver PDF do Projeto</a>
+                {% endif %}
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary mt-3">Registrar Parecer</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary mt-3 ms-2">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Novo Projeto{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h2 class="mb-4">Cadastrar Novo Projeto</h2>
+
+            <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#manual">Cadastro Manual</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#csv">Importar Planilha</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pb">Plataforma Brasil</button></li>
+            </ul>
+
+            <div class="tab-content" id="myTabContent">
+                {% include "core/includes/tab_manual.html" %}
+                {% include "core/includes/tab_csv.html" %}
+                {% include "core/includes/tab_pb.html" %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function conectarPB() {
+        const email = document.getElementById('pb_email').value;
+        const senha = document.getElementById('pb_senha').value;
+        const msgDiv = document.getElementById('pb_msg');
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        if(!email || !senha) { alert("Preencha todos os campos"); return; }
+
+        fetch("{% url 'receber_credenciais_pb' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ email: email, senha: senha })
+        })
+        .then(res => res.json())
+        .then(data => {
+            msgDiv.classList.remove('d-none', 'alert-danger');
+            msgDiv.classList.add('alert-success');
+            msgDiv.innerText = data.msg;
+            setTimeout(() => { bootstrap.Modal.getInstance(document.getElementById('modalPB')).hide(); }, 1500);
+        })
+        .catch(err => {
+            msgDiv.classList.remove('d-none', 'alert-success');
+            msgDiv.classList.add('alert-danger');
+            msgDiv.innerText = "Erro ao conectar.";
+        });
+    }
+</script>
+{% endblock %}

@@ -1,57 +1,46 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Detalhes do Projeto{% endblock %}
+{% block title %}{{ projeto.titulo }}{% endblock %}
 
 {% block content %}
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between">
         <h2>{{ projeto.titulo }}</h2>
-        <a href="{% url 'dashboard' %}" style="padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px;">Voltar</a>
-    </div>
-    
-    <div style="background: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
-        <h3 style="margin-top: 0; border-bottom: 2px solid #f4f4f4; padding-bottom: 10px;">Dados do Projeto</h3>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-                <p><strong>Status Atual:</strong> <span style="padding: 4px 8px; background: #eee; border-radius: 4px;">{{ projeto.get_status_display }}</span></p>
-                <p><strong>CAAE:</strong> {{ projeto.caae }}</p>
-                <p><strong>Protocolo:</strong> {{ projeto.protocolo|default:"-" }}</p>
-                <p><strong>Relator Designado:</strong> {{ projeto.relator_designado.username|default:"Aguardando designação" }}</p>
-            </div>
-            <div>
-                <p><strong>Data Submissão:</strong> {{ projeto.data_submissao|date:"d/m/Y H:i" }}</p>
-                <p><strong>Data Aprovação:</strong> {{ projeto.data_aprovacao|date:"d/m/Y"|default:"-" }}</p>
-                <p><strong>Relatório Parcial:</strong> {{ projeto.rel_parc|yesno:"Recebido,Pendente" }}</p>
-                <p><strong>Relatório Final:</strong> {{ projeto.rel_final|yesno:"Recebido,Pendente" }}</p>
-            </div>
+        <div>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Voltar</a>
+            <a href="{% url 'cadastrar_emenda' projeto.id %}" class="btn btn-warning">Nova Emenda</a>
         </div>
-
-        <h4 style="margin-top: 20px; border-bottom: 1px solid #eee;">Dados do Pesquisador Responsável</h4>
-        <p><strong>Nome:</strong> {{ projeto.pesquisador.nome }}</p>
-        <p><strong>Email:</strong> {{ projeto.pesquisador.email }}</p>
-        <p><strong>Telefone:</strong> {{ projeto.pesquisador.telefone|default:"-" }}</p>
-        
-        <h4 style="margin-top: 20px; border-bottom: 1px solid #eee;">Descrição</h4>
-        <p style="text-align: justify;">{{ projeto.descricao }}</p>
     </div>
-
-    <h3>Histórico de Pareceres</h3>
-    {% if pareceres %}
-        {% for parecer in pareceres %}
-            <div style="background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-left: 5px solid {% if parecer.decisao == 'aprovado' %}green{% elif parecer.decisao == 'reprovado' %}red{% else %}orange{% endif %}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <div style="display: flex; justify-content: space-between;">
-                    <strong>Decisão: {{ parecer.get_decisao_display }}</strong>
-                    <small>{{ parecer.data_parecer|date:"d/m/Y H:i" }}</small>
-                </div>
-                <hr style="border: 0; border-top: 1px solid #ddd;">
-                <p style="font-style: italic; color: #555;">"{{ parecer.justificativa }}"</p>
-                <div style="text-align: right; font-size: 0.9em; color: #777;">
-                    — Relator: {{ parecer.relator.username }}
-                </div>
-            </div>
-        {% endfor %}
-    {% else %}
-        <p>Nenhum parecer emitido ainda.</p>
+    <hr>
+    <p><strong>CAAE:</strong> {{ projeto.caae }}</p>
+    <p><strong>Pesquisador:</strong> {{ projeto.pesquisador.nome }} ({{ projeto.pesquisador.email }})</p>
+    <p><strong>Status:</strong> {{ projeto.get_status_display }}</p>
+    
+    {% if projeto.arquivo_pdf %}
+        <p><strong>Arquivo:</strong> <a href="{{ projeto.arquivo_pdf.url }}" target="_blank">Baixar PDF</a></p>
     {% endif %}
+    
+    <div class="bg-light p-3 rounded">
+        <h5>Descrição</h5>
+        <p>{{ projeto.descricao }}</p>
+    </div>
+</div>
 
+<h3 class="mt-4">Emendas</h3>
+{% if projeto.emendas.all %}
+    <ul class="list-group">
+        {% for emenda in projeto.emendas.all %}
+            <li class="list-group-item">
+                <strong>{{ emenda.titulo }}</strong> - {{ emenda.data_submissao|date:"d/m/Y" }}
+                {% if emenda.arquivo_pdf %}
+                    <a href="{{ emenda.arquivo_pdf.url }}" class="badge bg-secondary text-decoration-none ms-2">PDF</a>
+                {% endif %}
+                <br>
+                <small>{{ emenda.descricao }}</small>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-muted">Nenhuma emenda registrada.</p>
+{% endif %}
 {% endblock %}

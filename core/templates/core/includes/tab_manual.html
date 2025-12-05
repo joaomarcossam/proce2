@@ -1,0 +1,20 @@
+<div class="tab-pane fade show active" id="manual" role="tabpanel">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <h5 class="text-muted mb-3">Dados do Pesquisador</h5>
+        <div class="mb-3">{{ form.pesquisador_nome.label_tag }}{{ form.pesquisador_nome }}</div>
+        <div class="row">
+            <div class="col-md-6 mb-3">{{ form.pesquisador_email.label_tag }}{{ form.pesquisador_email }}</div>
+            <div class="col-md-6 mb-3">{{ form.pesquisador_telefone.label_tag }}{{ form.pesquisador_telefone }}</div>
+        </div>
+
+        <h5 class="text-muted mb-3 mt-4">Dados do Projeto</h5>
+        <div class="mb-3">{{ form.titulo.label_tag }}{{ form.titulo }}</div>
+        <div class="mb-3">{{ form.caae.label_tag }}{{ form.caae }}</div>
+        <div class="mb-3">{{ form.descricao.label_tag }}{{ form.descricao }}</div>
+        <div class="mb-3">{{ form.arquivo_pdf.label_tag }}{{ form.arquivo_pdf }}</div>
+
+        <button type="submit" class="btn btn-success w-100 mt-3">Salvar Projeto</button>
+    </form>
+</div>
