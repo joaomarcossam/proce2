@@ -1,128 +1,176 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponseForbidden
-from .models import Projeto, User 
-from .forms import DesignarRelatorForm, ParecerForm
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
 from django.utils import timezone
-
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+import json
+import csv
+import io
 from functools import wraps
+from .models import Projeto, Pesquisador, Emenda, PlataformaBrasilService, Parecer
+from .forms import DesignarRelatorForm, ParecerForm, ProjetoForm, EmendaForm, CadastroRelatorForm
 
+# --- DECORATORS E AUXILIARES ---
 def grupo_requerido(nome_grupo):
-    """
-    Um decorator que verifica se o usuário pertence a um grupo específico.
-    """
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
                 return redirect('login')
-            
             if not request.user.groups.filter(name=nome_grupo).exists():
-                # Se não pertencer, retorna "Proibido"
                 return HttpResponseForbidden("Você não tem permissão para acessar esta página.")
-            
             return view_func(request, *args, **kwargs)
         return _wrapped_view
     return decorator
 
-# Função auxiliar que já tínhamos (mantenha ela)
 def is_grupo(user, nome_grupo):
     return user.groups.filter(name=nome_grupo).exists()
 
-@login_required # Garante que apenas usuários logados acessem esta página
+def is_gestor(user):
+    return is_grupo(user, 'Gestores') or user.is_superuser
+
+def is_relator(user):
+    return is_grupo(user, 'Relatores')
+
+def processar_csv(csv_file):
+    try:
+        decoded_file = csv_file.read().decode('utf-8-sig')
+        io_string = io.StringIO(decoded_file)
+        reader = csv.DictReader(io_string, delimiter=',')
+        
+        projetos_criados = 0
+        
+        for row in reader:
+            email_pesq = row.get('EmailPesq')
+            nome_pesq = row.get('NomePesq', 'Pesquisador Desconhecido')
+            
+            if email_pesq:
+                pesquisador, created = Pesquisador.objects.get_or_create(
+                    email=email_pesq,
+                    defaults={'nome': nome_pesq}
+                )
+                
+                Projeto.objects.create(
+                    titulo=row.get('Titulo', 'Sem Título'),
+                    descricao=row.get('Descricao', ''),
+                    caae=row.get('CAAE'),
+                    pesquisador=pesquisador,
+                    status='novo'
+                )
+                projetos_criados += 1
+        return projetos_criados
+    except Exception as e:
+        print(f"Erro no CSV: {e}")
+        return 0
+
+# --- VIEWS PRINCIPAIS ---
+
+@login_required
 def dashboard(request):
     """
     Página inicial (Dashboard) que muda conforme o grupo do usuário.
     """
-    contexto = {}
     
-    # Se for do grupo 'Gestores'
-    if is_grupo(request.user, 'Gestores'):
-        # 1. Pegue todos os projetos que estão com status 'novo' (precisam de relator)
-        projetos_para_designar = Projeto.objects.filter(status='novo')
+    # 1. VISÃO DO GESTOR
+    if is_gestor(request.user):
+        projetos_novos_query = Projeto.objects.filter(status='novo').order_by('-data_submissao')
+        projetos_em_analise = Projeto.objects.filter(status='em_analise').order_by('-data_submissao')
+        projetos_concluidos = Projeto.objects.filter(status__in=['aprovado', 'reprovado']).order_by('-data_submissao')
         
-        # 2. Pegue todos os projetos que já estão em análise ou pendentes
-        projetos_em_analise = Projeto.objects.filter(status__in=['em_analise', 'pendente'])
+        # Busca Relatores e seus projetos
+        relatores_stats = User.objects.filter(groups__name='Relatores').prefetch_related('projetos_designados')
         
-        # 3. Pegue projetos finalizados
-        projetos_concluidos = Projeto.objects.filter(status__in=['aprovado', 'reprovado'])
+        contexto = {
+            'projetos_para_designar': projetos_novos_query, 
+            'projetos_em_analise': projetos_em_analise,
+            'projetos_concluidos': projetos_concluidos,
+            'relatores_stats': relatores_stats,
+        }
+        return render(request, 'core/dashboard_gestor.html', contexto)
 
-        contexto['projetos_para_designar'] = projetos_para_designar
-        contexto['projetos_em_analise'] = projetos_em_analise
-        contexto['projetos_concluidos'] = projetos_concluidos
-
-        # Define qual template HTML deve ser usado
-        template_renderizar = 'core/dashboard_gestor.html'
-
-    # Se for do grupo 'Relatores'
-    elif is_grupo(request.user, 'Relatores'):
-        # 1. Pegue os projetos que foram designados PARA ESTE relator e estão 'em_analise'
+    # 2. VISÃO DO RELATOR
+    elif is_relator(request.user):
         projetos_para_analisar = Projeto.objects.filter(
             relator_designado=request.user, 
             status='em_analise'
         )
-        
-        # 2. Pegue os projetos que este relator já analisou (aprovou, reprovou, pendente)
         meus_projetos_concluidos = Projeto.objects.filter(
             relator_designado=request.user
-        ).exclude(status='em_analise') # Exclui os que ainda estão para analisar
+        ).exclude(status__in=['novo', 'em_analise'])
 
-        contexto['projetos_para_analisar'] = projetos_para_analisar
-        contexto['meus_projetos_concluidos'] = meus_projetos_concluidos
-        
-        template_renderizar = 'core/dashboard_relator.html'
+        contexto = {
+            'projetos_para_analisar': projetos_para_analisar,
+            'meus_projetos_concluidos': meus_projetos_concluidos,
+        }
+        return render(request, 'core/dashboard_relator.html', contexto)
     
-    # Se não for de nenhum grupo (ex: superusuário ou erro)
+    # 3. SEM GRUPO
     else:
-        contexto['mensagem_erro'] = "Seu usuário não está configurado em um grupo (Gestor ou Relator)."
-        template_renderizar = 'core/dashboard_generico.html'
+        return render(request, 'core/dashboard_generico.html', {'mensagem_erro': 'Usuário sem grupo definido.'})
 
-    return render(request, template_renderizar, contexto)
+@login_required
+def cadastrar_projeto(request):
+    if not is_gestor(request.user):
+        return HttpResponseForbidden("Apenas gestores podem cadastrar projetos.")
+
+    form = ProjetoForm()
+    mensagem = None
+
+    if request.method == 'POST':
+        if 'csv_file' in request.FILES:
+            qtd = processar_csv(request.FILES['csv_file'])
+            return redirect('dashboard')
+        else:
+            form = ProjetoForm(request.POST, request.FILES)
+            if form.is_valid():
+                form.save()
+                return redirect('dashboard')
+
+    return render(request, 'core/cadastrar_projeto.html', {'form': form, 'mensagem': mensagem})
+
+@login_required
+def cadastrar_relator(request):
+    if not is_gestor(request.user):
+        return HttpResponseForbidden("Apenas gestores podem cadastrar relatores.")
+
+    if request.method == 'POST':
+        form = CadastroRelatorForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('dashboard')
+    else:
+        form = CadastroRelatorForm()
+
+    return render(request, 'core/cadastrar_relator.html', {'form': form})
 
 @login_required
 @grupo_requerido('Gestores')
 def designar_relator(request, pk):
-    """
-    Página para um Gestor designar um relator a um projeto específico (pk).
-    """
-    projeto = get_object_or_404(Projeto, pk=pk, status='novo')
+    projeto = get_object_or_404(Projeto, pk=pk)
+
+    if projeto.status in ['aprovado', 'reprovado']:
+        return HttpResponseForbidden("Não é possível alterar o relator de um projeto já concluído.")
 
     if request.method == 'POST':
         form = DesignarRelatorForm(request.POST, instance=projeto)
         if form.is_valid():
-            projeto_salvo = form.save(commit=False)
-            # Ao designar um relator, o status muda para 'Em Análise'
-            projeto_salvo.status = 'em_analise' 
-            projeto_salvo.save()
-            
-            # Redireciona de volta ao Dashboard
-            return redirect('dashboard') 
+            projeto = form.save(commit=False)
+            projeto.status = 'em_analise'
+            projeto.save()
+            return redirect('dashboard')
     else:
-        # GET: Mostra o formulário
         form = DesignarRelatorForm(instance=projeto)
 
-    contexto = {
-        'form': form,
-        'projeto': projeto
-    }
-    return render(request, 'core/designar_relator.html', contexto)
+    return render(request, 'core/designar_relator.html', {'form': form, 'projeto': projeto})
 
 @login_required
-@grupo_requerido('Relatores') # Apenas Relatores
+@grupo_requerido('Relatores')
 def dar_parecer(request, pk):
-    """
-    Página para um Relator dar seu parecer sobre um projeto específico (pk).
-    """
     projeto = get_object_or_404(Projeto, pk=pk)
 
-    # --- VERIFICAÇÃO DE SEGURANÇA ---
-    # O usuário logado é o relator designado?
     if request.user != projeto.relator_designado:
-        return HttpResponseForbidden("Você não é o relator designado para este projeto.")
-    
-    # O projeto está no status correto para receber um parecer?
-    if projeto.status != 'em_analise':
-        return HttpResponseForbidden(f"Este projeto está com status '{projeto.get_status_display()}' e não pode receber pareceres no momento.")
+        return HttpResponseForbidden("Você não é o relator deste projeto.")
 
     if request.method == 'POST':
         form = ParecerForm(request.POST)
@@ -132,43 +180,95 @@ def dar_parecer(request, pk):
             parecer.relator = request.user
             parecer.save()
 
-            projeto.status = parecer.decisao
-            
-            # Se a decisão for APROVADO, salva a data de hoje na data_aprovacao
+            projeto.status = parecer.decisao 
             if parecer.decisao == 'aprovado':
                 projeto.data_aprovacao = timezone.now().date()
-            else:
-                projeto.data_aprovacao = None
-
             projeto.save()
             
             return redirect('dashboard')
     else:
-        # GET: Mostra o formulário vazio
         form = ParecerForm()
 
-    contexto = {
-        'form': form,
-        'projeto': projeto
-    }
-    return render(request, 'core/dar_parecer.html', contexto)
+    return render(request, 'core/dar_parecer.html', {'form': form, 'projeto': projeto})
+
+@login_required
+def cadastrar_emenda(request, projeto_id):
+    projeto = get_object_or_404(Projeto, pk=projeto_id)
+    
+    if request.method == 'POST':
+        form = EmendaForm(request.POST, request.FILES)
+        if form.is_valid():
+            emenda = form.save(commit=False)
+            emenda.projeto = projeto
+            emenda.save()
+            return redirect('detalhe_projeto', pk=projeto.id)
+    else:
+        form = EmendaForm()
+    
+    return render(request, 'core/cadastrar_emenda.html', {'form': form, 'projeto': projeto})
 
 @login_required
 def detalhe_projeto(request, pk):
-    """
-    Exibe os detalhes de um projeto e seu histórico de pareceres.
-    """
     projeto = get_object_or_404(Projeto, pk=pk)
     
-    # Segurança básica: Relatores só veem seus próprios projetos
-    if is_grupo(request.user, 'Relatores') and projeto.relator_designado != request.user:
-         return HttpResponseForbidden("Você não tem permissão para visualizar este projeto.")
+    if is_relator(request.user) and not is_gestor(request.user):
+        if projeto.relator_designado != request.user:
+            return HttpResponseForbidden()
 
-    # Busca todos os pareceres desse projeto, do mais recente para o mais antigo
     pareceres = projeto.pareceres.all().order_by('-data_parecer')
 
-    contexto = {
-        'projeto': projeto,
-        'pareceres': pareceres
-    }
-    return render(request, 'core/detalhe_projeto.html', contexto)
+    return render(request, 'core/detalhe_projeto.html', {'projeto': projeto, 'pareceres': pareceres})
+
+@csrf_exempt
+def receber_credenciais_pb(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data.get('email')
+            senha = data.get('senha')
+            PlataformaBrasilService.receber_credenciais(email, senha)
+            return JsonResponse({'status': 'ok', 'msg': 'Credenciais recebidas com sucesso!'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'msg': str(e)}, status=500)
+    return JsonResponse({'status': 'error'}, status=400)
+
+# --- FUNÇÃO DE EXPORTAÇÃO DE CSV---
+@login_required
+def exportar_relatores(request):
+    if not is_gestor(request.user):
+        return HttpResponseForbidden("Apenas gestores podem exportar dados.")
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="relatores_projetos.csv"'
+  
+    writer = csv.writer(response)
+    # Cabeçalho do arquivo
+    writer.writerow(['Nome do Relator', 'E-mail', 'Projeto', 'CAAE', 'Status', 'Data Submissão'])
+    
+    # Busca dados
+    relatores = User.objects.filter(groups__name='Relatores').prefetch_related('projetos_designados')
+    
+    for relator in relatores:
+        projetos = relator.projetos_designados.all()
+        if projetos:
+            for projeto in projetos:
+                writer.writerow([
+                    relator.first_name or relator.username,
+                    relator.email,
+                    projeto.titulo,
+                    projeto.caae,
+                    projeto.get_status_display(),
+                    projeto.data_submissao.strftime("%d/%m/%Y")
+                ])
+        else:
+            # Se o relator não tiver projetos, cria uma linha indicando isso
+             writer.writerow([
+                relator.first_name or relator.username,
+                relator.email,
+                "Nenhum projeto designado",
+                "-",
+                "-",
+                "-"
+            ])
+            
+    return response

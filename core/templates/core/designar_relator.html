@@ -1,21 +1,21 @@
 {% extends 'core/base.html' %}
-
 {% block title %}Designar Relator{% endblock %}
-
 {% block content %}
-    <h2>Designar Relator</h2>
-    <hr>
-    
-    <h3>Projeto: {{ projeto.titulo }}</h3>
-    <p>{{ projeto.descricao }}</p>
-
-    <form method="post">
-        {% csrf_token %}
-        
-        <p>Por favor, selecione um relator da lista abaixo:</p>
-        
-        {{ form.as_p }}
-
-        <button type="submit">Designar e Iniciar Análise</button>
-    </form>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h3>Designar Relator</h3>
+            <p class="text-muted">Projeto: <strong>{{ projeto.titulo }}</strong></p>
+            <hr>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ form.as_p }}
+                </div>
+                <button type="submit" class="btn btn-success w-100">Confirmar Designação</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-link w-100 mt-2">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

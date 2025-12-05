@@ -1,0 +1,35 @@
+<div class="tab-pane fade text-center py-5" id="pb" role="tabpanel">
+    <!-- Você pode trocar a URL da imagem por uma local se preferir -->
+    <img src="https://plataformabrasil.saude.gov.br/login/javax.faces.resource/images/logo-pb.png.jsf?ln=tema" alt="Logo PB" style="max-height: 50px;" class="mb-4">
+    <p>Conecte-se para importar dados diretamente.</p>
+    <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#modalPB">
+        Acessar Plataforma Brasil
+    </button>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="modalPB" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Login Plataforma Brasil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                <div class="mb-3">
+                    <label>E-mail / CPF</label>
+                    <input type="text" id="pb_email" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label>Senha</label>
+                    <input type="password" id="pb_senha" class="form-control">
+                </div>
+                <div id="pb_msg" class="alert d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="conectarPB()">Entrar</button>
+            </div>
+        </div>
+    </div>
+</div>
