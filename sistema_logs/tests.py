@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
+from decouple import config
 
 from sistema_logs.models import Logs
 from core.models import Projeto, Pesquisador
@@ -109,6 +110,7 @@ class RegistroLogTestCase(TestCase):
 
         log = Logs.objects.last()
         self.assertIsNotNone(log.horario)
+    
     # BuscaLog
 
     def teste_filtro_nome_log(self):
@@ -183,7 +185,6 @@ class RegistroLogTestCase(TestCase):
             modo_data="lte",
             filtro_data_final=self.data_b
         )
-        # Esperado: log1 (data_a) e log2 (data_b)
         self.assertEqual(resultados.count(), 2)
         self.assertEqual(resultados.first(), self.log1)
 
