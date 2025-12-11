@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: proce
+    name: proce.cep
     env: python
     plan: free
     buildCommand: |
