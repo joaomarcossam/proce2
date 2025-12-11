@@ -2,6 +2,7 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 class PlataformaBrasilService:
     @staticmethod
@@ -56,7 +57,7 @@ class Projeto(models.Model):
         related_name="projetos"
     )
 
-    data_submissao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Submissão")
+    data_submissao = models.DateTimeField(default=timezone.now, verbose_name="Data de Submissão")
     data_aprovacao = models.DateField("Data de Aprovação", null=True, blank=True, help_text="Preenchido automaticamente ao aprovar.")
     
     relator_designado = models.ForeignKey(
@@ -121,7 +122,6 @@ class Parecer(models.Model):
     projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, related_name='pareceres')
     
     relator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pareceres_dados')
-    
     data_parecer = models.DateTimeField(auto_now_add=True, verbose_name="Data do Parecer")
     decisao = models.CharField(max_length=20, choices=DECISAO_CHOICES)
     justificativa = models.TextField()
