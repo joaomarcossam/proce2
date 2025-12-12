@@ -8,7 +8,7 @@ import json
 import csv
 import io
 from functools import wraps
-from .models import Projeto, Pesquisador, Emenda, PlataformaBrasilService, Parecer
+from .models import Projeto, Pesquisador, Emenda, Parecer
 from .forms import DesignarRelatorForm, ParecerForm, ProjetoForm, EmendaForm, CadastroRelatorForm
 from emails.gerenciadorEmails import GerenciadorEmails
 from itertools import chain

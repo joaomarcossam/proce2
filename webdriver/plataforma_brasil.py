@@ -11,6 +11,12 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from core.models import Projeto
 from sistema_logs.models import Logs
 
+"""
+TODO:
+    Alterar o código para Português
+"""
+
+
 apreciacao_map = {
     'PO': 'Projeto Original de Centro Coordenador',
     'E': 'Emenda de Centro Coornedaor',
@@ -28,24 +34,27 @@ class EnumSituacao(StrEnum):
     APROVADO = "Relatoria Aprovada"
     REPROVADO = "Em relatoria"
 
-class PlataformaBrasilWebDriver:
+class PlataformaBrasilService:
     base_url = "https://plataformabrasil.saude.gov.br/"
     instance = None
 
-    def __init__(self):
+    def __init__(self, headless = True):
         chrome_options = Options()
-        #chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--no-sandbox")
+        if headless:
+            chrome_options.add_argument("--headless")
 
         self.driver = webdriver.Chrome(options=chrome_options)
         self.logged = False
         self.projects = None
+        self.user_email = None
+        self.user_password = None
 
     @classmethod
-    def init(cls):
+    def init(cls, headless = True):
         if not cls.instance:
-            cls.instance = PlataformaBrasilWebDriver()
+            cls.instance = PlataformaBrasilService(headless)
             cls.instance.open().check_alerts()
 
         return cls.instance
@@ -88,6 +97,10 @@ class PlataformaBrasilWebDriver:
             return self
 
     def login(self, email, password):
+        if not (self.user_email and self.user_password):
+            print("As credenciais devem ser informadas antes da chamada para o serviço.")
+            return self
+        
         try:
             email_input = self.driver.find_element(By.ID, "j_id19:email")
             password_input = self.driver.find_element(By.ID, "j_id19:senha")
@@ -149,6 +162,9 @@ class PlataformaBrasilWebDriver:
         return self
     
     def fetch_projects_form_table(self):
+        if not self.logged:
+            self.login(self.user_email, self.user_password)
+
         field_map = {
             'apreciacao': 0,
             'tipo': 1,
@@ -236,4 +252,9 @@ class PlataformaBrasilWebDriver:
             except Exception as e:
                 print(f"Falha ao ler informações do projetos")
     
+        return self
+    
+    def receber_credenciais(self, email, senha):
+        self.user_email = email
+        self.user_password = senha
         return self
