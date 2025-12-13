@@ -2,7 +2,7 @@ services:
   - type: web
     name: proce.cep
     env: python
-    plan: free
+    plan: starter
     buildCommand: |
       pip install -r requirements.txt
       python manage.py migrate
