@@ -1,63 +1,126 @@
 {% extends 'core/base.html' %}
-
 {% block title %}Novo Projeto{% endblock %}
-
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-11">
         <div class="card p-4">
             <h2 class="mb-4">Cadastrar Novo Projeto</h2>
+            
+            {% if mensagem %}
+                <div class="alert alert-warning">{{ mensagem }}</div>
+            {% endif %}
 
-            <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
-                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#manual">Cadastro Manual</button></li>
-                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#csv">Importar Planilha</button></li>
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item"><button class="nav-link {% if aba_ativa == 'manual' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#manual">Manual</button></li>
+                <li class="nav-item"><button class="nav-link {% if aba_ativa == 'csv' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#csv">Planilha</button></li>
                 <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pb">Plataforma Brasil</button></li>
             </ul>
 
-            <div class="tab-content" id="myTabContent">
-                {% include "core/includes/tab_manual.html" %}
-                {% include "core/includes/tab_csv.html" %}
+            <div class="tab-content">
+                <div class="tab-pane fade {% if aba_ativa == 'manual' %}show active{% endif %}" id="manual">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                         <div class="row mb-3">
+                            <div class="col-md-6">{{ form.pesquisador_nome.label_tag }}{{ form.pesquisador_nome }}</div>
+                            <div class="col-md-6">{{ form.pesquisador_email.label_tag }}{{ form.pesquisador_email }}</div>
+                        </div>
+                        <div class="mb-3">{{ form.titulo.label_tag }}{{ form.titulo }}</div>
+                        <div class="row">
+                            <div class="col-md-4">{{ form.caae.label_tag }}{{ form.caae }}</div>
+                            <div class="col-md-4">{{ form.status_inicial.label_tag }}{{ form.status_inicial }}</div>
+                            <div class="col-md-4">{{ form.data_aprovacao.label_tag }}{{ form.data_aprovacao }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.relator_designado.label_tag }}
+                            {{ form.relator_designado }}
+                        </div>
+
+                         <div class="mb-3 mt-2">{{ form.data_parecer_manual.label_tag }}{{ form.data_parecer_manual }}</div>
+                        
+                        <div class="mb-3">{{ form.descricao.label_tag }}{{ form.descricao }}</div>
+                        <button type="submit" class="btn btn-success w-100">Salvar</button>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade {% if aba_ativa == 'csv' %}show active{% endif %}" id="csv">
+                    {% if formset %}
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ formset.management_form }}
+                            
+                            {% if formset.non_form_errors %}
+                                <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                            {% endif %}
+
+                            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                                <table class="table table-bordered table-sm align-middle">
+                                    <thead class="table-dark sticky-top">
+                                        <tr>
+                                            <th>CAAE</th>
+                                            <th>Título</th>
+                                            <th>Pesquisador</th>
+                                            <th>E-mail (Obrigatório)</th>
+                                            <th style="width: 130px;">Status</th>
+                                            <th style="width: 150px;">Data Parecer</th> <th>Relator</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for f in formset %}
+                                            <tr>
+                                                {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+                                                {{ f.descricao.as_hidden }} 
+                                                <td style="display:none;">{{ f.relator_nome_texto }}</td>
+
+                                                <td>{{ f.caae }}{% if f.caae.errors %}<div class="text-danger small">{{ f.caae.errors|join:", " }}</div>{% endif %}</td>
+                                                <td>{{ f.titulo }}{% if f.titulo.errors %}<div class="text-danger small">{{ f.titulo.errors|join:", " }}</div>{% endif %}</td>
+                                                <td>{{ f.pesquisador_nome }}{% if f.pesquisador_nome.errors %}<div class="text-danger small">{{ f.pesquisador_nome.errors|join:", " }}</div>{% endif %}</td>
+                                                <td>
+                                                    {{ f.pesquisador_email }}
+                                                    {% if f.pesquisador_email.errors %}<div class="text-danger fw-bold small">Preencher! ({{ f.pesquisador_email.errors|join:", " }})</div>{% endif %}
+                                                </td>
+                                                <td>{{ f.status_inicial }}</td>
+                                                
+                                                <td>
+                                                    {{ f.data_parecer_manual }}
+                                                    {% if f.data_parecer_manual.errors %}
+                                                        <div class="text-danger small">{{ f.data_parecer_manual.errors|join:", " }}</div>
+                                                    {% endif %}
+                                                </td>
+
+                                                <td>{{ f.relator_designado }}</td>
+                                            </tr>
+                                            {% if f.non_field_errors or f.descricao.errors %}
+                                            <tr>
+                                                <td colspan="7" class="bg-danger text-white p-1 small">
+                                                    Erro: {{ f.non_field_errors }} {{ f.descricao.errors }}
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="submit" class="btn btn-success mt-3 w-100">Confirmar Importação</button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <small>O arquivo deve conter as colunas: <strong>CAAE, EmailPesq, NomePesq, Titulo, Descricao, RELATOR</strong></small>
+                        </div>
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label>Arquivo (.xlsx ou .csv)</label>
+                                <input type="file" name="arquivo_importacao" class="form-control" accept=".xlsx, .xls, .csv" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Carregar e Revisar</button>
+                        </form>
+                    {% endif %}
+                </div>
+
                 {% include "core/includes/tab_pb.html" %}
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    function conectarPB() {
-        const email = document.getElementById('pb_email').value;
-        const senha = document.getElementById('pb_senha').value;
-        const msgDiv = document.getElementById('pb_msg');
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        if(!email || !senha) { alert("Preencha todos os campos"); return; }
-
-        fetch("{% url 'receber_credenciais_pb' %}", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-            body: JSON.stringify({ email: email, senha: senha })
-        })
-        .then(res => res.json())
-        .then(data => {
-            console.log(data);
-            if(data.status === 'error') {
-                msgDiv.classList.remove('d-none', 'alert-success');
-                msgDiv.classList.add('alert-danger');
-                msgDiv.innerText = data.msg;
-                return;
-            }
-            msgDiv.classList.remove('d-none', 'alert-danger');
-            msgDiv.classList.add('alert-success');
-            msgDiv.innerText = data.msg;
-            setTimeout(() => { bootstrap.Modal.getInstance(document.getElementById('modalPB')).hide(); }, 1500);
-        })
-        .catch(err => {
-            msgDiv.classList.remove('d-none', 'alert-success');
-            msgDiv.classList.add('alert-danger');
-            msgDiv.innerText = "Erro ao conectar.";
-        });
-    }
-</script>
 {% endblock %}

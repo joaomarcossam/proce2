@@ -34,8 +34,8 @@ urlpatterns = [
     path('reset_password/', 
          auth_views.PasswordResetView.as_view(
              template_name="registration/password_reset_form.html",
-             form_class=CustomPasswordResetForm, # Usa o form que permite usuários sem senha
-             from_email="santosjulialuiza@gmail.com" # Remetente hardcoded para garantir entrega no Gmail
+             form_class=CustomPasswordResetForm, 
+             from_email="santosjulialuiza@gmail.com" 
          ), 
          name="password_reset"
     ),
@@ -46,6 +46,8 @@ urlpatterns = [
 
     path('emenda/<int:pk>/parecer/', views.dar_parecer_emenda, name='dar_parecer_emenda'),
     path('emenda/<int:pk>/', views.detalhe_emenda, name='detalhe_emenda'),
+
+    path('projeto/<int:pk>/editar/', views.editar_projeto, name='editar_projeto'),
 
 
 ]

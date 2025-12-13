@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+
 class PlataformaBrasilService:
     @staticmethod
     def receber_credenciais(email, senha):
@@ -52,7 +53,7 @@ class Projeto(models.Model):
     
     pesquisador = models.ForeignKey(
         Pesquisador, 
-        on_delete=models.PROTECT, # Não permite deletar o pesquisador se ele tiver projetos
+        on_delete=models.PROTECT, 
         verbose_name="Pesquisador Responsável",
         related_name="projetos"
     )
@@ -125,6 +126,13 @@ class Parecer(models.Model):
     data_parecer = models.DateTimeField(default=timezone.now, verbose_name="Data do Parecer")
     decisao = models.CharField(max_length=20, choices=DECISAO_CHOICES)
     justificativa = models.TextField()
+
+    arquivo_parecer = models.FileField(
+        "Anexo do Parecer (PDF)", 
+        upload_to='pareceres/pdfs/', 
+        null=True, 
+        blank=True
+    )
 
     def __str__(self):
         return f"Parecer de {self.relator.username} para {self.projeto.titulo}"
