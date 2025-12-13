@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+from datetime import datetime # Importação necessária para converter strings em data
 from django.forms import formset_factory
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -197,15 +198,35 @@ def cadastrar_projeto(request):
                     
                     for col in cols_reuniao:
                         val = str(row.get(col, '')).strip().upper()
+                        
+                        # ---LÓGICA DE EXTRAÇÃO DE DATA ---
+                        # Tenta extrair a data do cabeçalho da coluna (ex: "Reunião:01/09")
+                        # Se não conseguir, usa data de hoje 
+                        data_extraida = timezone.now().date()
+                        try:
+                            # Divide por ':' ou espaço para pegar "01/09"
+                            if ':' in col:
+                                str_data = col.split(':')[-1].strip()
+                            else:
+                                str_data = col.split()[-1].strip()
+                            
+                            # Tenta converter dd/mm para data com ano atual
+                            dia, mes = str_data.split('/')
+                            ano_atual = timezone.now().year
+                            data_extraida = datetime(ano_atual, int(mes), int(dia)).date()
+                        except:
+                            # Se der erro no parse (ex: formato diferente), mantém a data de hoje
+                            pass
+
                         if 'PENDENCIA' in val or 'PENDÊNCIA' in val:
                             status_detectado = 'pendente'
-                            data_parecer_detectada = timezone.now().date()
+                            data_parecer_detectada = data_extraida
                         elif 'APROVADO' in val:
                             status_detectado = 'aprovado'
-                            data_parecer_detectada = timezone.now().date()
+                            data_parecer_detectada = data_extraida
                         elif 'REPROVADO' in val:
                             status_detectado = 'reprovado'
-                            data_parecer_detectada = timezone.now().date()
+                            data_parecer_detectada = data_extraida
 
                     if relator_id and status_detectado == 'novo':
                         status_detectado = 'em_analise'
@@ -376,10 +397,8 @@ def dar_parecer(request, pk):
 @login_required
 def cadastrar_emenda(request, projeto_id):
     projeto = get_object_or_404(Projeto, pk=projeto_id)
-    
     if not is_gestor(request.user):
         return HttpResponseForbidden("Apenas gestores podem cadastrar emendas.")
-    
     if request.method == 'POST':
         form = EmendaForm(request.POST, request.FILES)
         if form.is_valid():
@@ -394,10 +413,7 @@ def cadastrar_emenda(request, projeto_id):
 def detalhe_projeto(request, pk):
     projeto = get_object_or_404(Projeto, pk=pk) 
     pareceres = projeto.pareceres.all().order_by('-data_parecer')
-    
-
     is_gestor_user = is_gestor(request.user)
-    
     return render(request, 'core/detalhe_projeto.html', {
         'projeto': projeto, 
         'pareceres': pareceres,

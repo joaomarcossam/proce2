@@ -61,8 +61,8 @@
                                             <th>Título</th>
                                             <th>Pesquisador</th>
                                             <th>E-mail (Obrigatório)</th>
-                                            <th>Status Inicial</th>
-                                            <th>Relator</th>
+                                            <th style="width: 130px;">Status</th>
+                                            <th style="width: 150px;">Data Parecer</th> <th>Relator</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -70,7 +70,6 @@
                                             <tr>
                                                 {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
                                                 {{ f.descricao.as_hidden }} 
-                                                {{ f.data_parecer_manual.as_hidden }}
                                                 <td style="display:none;">{{ f.relator_nome_texto }}</td>
 
                                                 <td>{{ f.caae }}{% if f.caae.errors %}<div class="text-danger small">{{ f.caae.errors|join:", " }}</div>{% endif %}</td>
@@ -81,11 +80,19 @@
                                                     {% if f.pesquisador_email.errors %}<div class="text-danger fw-bold small">Preencher! ({{ f.pesquisador_email.errors|join:", " }})</div>{% endif %}
                                                 </td>
                                                 <td>{{ f.status_inicial }}</td>
+                                                
+                                                <td>
+                                                    {{ f.data_parecer_manual }}
+                                                    {% if f.data_parecer_manual.errors %}
+                                                        <div class="text-danger small">{{ f.data_parecer_manual.errors|join:", " }}</div>
+                                                    {% endif %}
+                                                </td>
+
                                                 <td>{{ f.relator_designado }}</td>
                                             </tr>
                                             {% if f.non_field_errors or f.descricao.errors %}
                                             <tr>
-                                                <td colspan="6" class="bg-danger text-white p-1 small">
+                                                <td colspan="7" class="bg-danger text-white p-1 small">
                                                     Erro: {{ f.non_field_errors }} {{ f.descricao.errors }}
                                                 </td>
                                             </tr>
