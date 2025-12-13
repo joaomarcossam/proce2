@@ -9,7 +9,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             User.objects.get(username='admin')
+            
         except ObjectDoesNotExist:
+            print(settings.ADMIN_EMAIL);
+            print(settings.ADMIN_PASSWORD);
             User.objects.create_superuser(
                 username='admin', email=settings.ADMIN_EMAIL, password=settings.ADMIN_PASSWORD
             )
