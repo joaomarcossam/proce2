@@ -25,7 +25,6 @@
                             
                             data-relator-email="{% if item.tipo_item == 'P' %}{% if item.relator_designado %}{{ item.relator_designado.email|lower }}{% endif %}{% else %}{% if item.projeto.relator_designado %}{{ item.projeto.relator_designado.email|lower }}{% endif %}{% endif %}">
 
-                            <!-- Coluna Tipo (P ou E) -->
                             <td class="text-center">
                                 {% if item.tipo_item == 'P' %}
                                     <span class="badge bg-primary rounded-circle" style="width: 30px; height: 30px; line-height: 22px; display: inline-block;" title="Projeto Original">P</span>
@@ -34,29 +33,24 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Coluna Título -->
                             <td>
                                 {% if item.tipo_item == 'P' %}
                                     <strong><a href="{% url 'detalhe_projeto' item.id %}" class="text-decoration-none text-dark">{{ item.titulo }}</a></strong><br>
                                     <small class="text-muted">CAAE: {{ item.caae }}</small>
                                 {% else %}
-                                    <!-- MUDANÇA AQUI: Link direto para a Emenda -->
                                     <strong><a href="{% url 'detalhe_emenda' item.id %}" class="text-decoration-none text-dark">Emenda: {{ item.titulo }}</a></strong><br>
                                     <small class="text-muted">Projeto Pai: <a href="{% url 'detalhe_projeto' item.projeto.id %}" class="text-decoration-none">{{ item.projeto.titulo }}</a></small>
                                 {% endif %}
                             </td>
 
-                            <!-- Coluna Responsável (Pesquisador ou Relator) -->
                             <td>
                                 {% if tipo == 'aguardando' %}
-                                    <!-- Se está aguardando, mostramos o Pesquisador -->
                                     {% if item.tipo_item == 'P' %}
                                         {{ item.pesquisador.nome }}
                                     {% else %}
                                         {{ item.projeto.pesquisador.nome }}
                                     {% endif %}
                                 {% else %}
-                                    <!-- Se está em análise/concluído, mostramos o Relator -->
                                     {% if item.tipo_item == 'P' %}
                                         {% if item.relator_designado %}
                                             {{ item.relator_designado.first_name|default:item.relator_designado.username }}<br>
@@ -77,14 +71,13 @@
 
                             <td>{{ item.data_submissao|date:"d/m/Y" }}</td>
 
-                            <!-- Coluna Ação -->
                             <td>
                                 {% if item.tipo_item == 'P' %}
-                                    <!-- AÇÕES DE PROJETO -->
                                     {% if tipo == 'aguardando' %}
                                         <a href="{% url 'designar_relator' item.id %}" class="btn btn-sm btn-outline-dark text-nowrap">
                                             <i class="bi bi-person-check"></i> Designar
                                         </a>
+                                    
                                     {% elif tipo == 'analise' %}
                                         <div class="d-flex gap-1 flex-wrap">
                                             <a href="{% url 'designar_relator' item.id %}" class="btn btn-sm btn-outline-secondary text-nowrap" title="Trocar Relator">
@@ -94,18 +87,35 @@
                                                 <i class="bi bi-pencil-square"></i> Parecer
                                             </a>
                                         </div>
+
+                                    {% elif tipo == 'pendente' %}
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <a href="{% url 'designar_relator' item.id %}" class="btn btn-sm btn-outline-secondary text-nowrap" title="Trocar Relator">
+                                                <i class="bi bi-arrow-repeat"></i> Alterar
+                                            </a>
+                                            <a href="{% url 'dar_parecer' item.id %}" class="btn btn-sm btn-dark text-nowrap" title="Registrar Parecer">
+                                                <i class="bi bi-pencil-square"></i> Parecer
+                                            </a>
+                                        </div>
+
                                     {% elif tipo == 'concluido' %}
-                                        {% if item.status == 'aprovado' %}
-                                            <span class="badge bg-success">Aprovado</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">Reprovado</span>
-                                        {% endif %}
-                                        <br><small class="text-muted">{{ item.data_aprovacao|default:"-" }}</small>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div>
+                                                {% if item.status == 'aprovado' %}
+                                                    <span class="badge bg-success">Aprovado</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Reprovado</span>
+                                                {% endif %}
+                                                <br><small class="text-muted">{{ item.data_aprovacao|default:"-" }}</small>
+                                            </div>
+                                            <a href="{% url 'designar_relator' item.id %}" class="btn btn-sm btn-outline-secondary py-0 px-1" title="Alterar Relator">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </a>
+                                        </div>
                                     {% endif %}
                                 
                                 {% else %}
-                                    <!-- AÇÕES DE EMENDA -->
-                                    {% if tipo == 'analise' %}
+                                    {% if tipo == 'analise' or tipo == 'pendente' %}
                                         <a href="{% url 'dar_parecer_emenda' item.id %}" class="btn btn-sm btn-dark text-nowrap">
                                             <i class="bi bi-pencil-square"></i> Parecer
                                         </a>

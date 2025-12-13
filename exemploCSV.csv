@@ -1,5 +1,5 @@
-CAAE,EmailPesq,NomePesq,Titulo,Descricao
-44556677.1.0000.0021,larissa.monteiro@pesquisa.br,Larissa Monteiro,Avaliação de Algoritmos em Ambientes Educacionais,Investigação sobre o uso de modelos adaptativos para personalização de materiais didáticos.
-22001133.4.0000.0032,ricardo.menezes@instituto.org,Ricardo Menezes,Terapias Inovadoras para Insuficiência Cardíaca,Estudo preliminar sobre a resposta clínica ao composto HZ-14 em adultos acima de 50 anos.
-55443322.9.0000.0045,beatriz.lima@universidade.edu,Beatriz Lima,Gestão de Energia em Centros Urbanos,Análise das práticas de eficiência energética aplicadas em prédios corporativos.
-33009988.7.0000.0019,fernando.alves@techlab.net,Fernando Alves,Privacidade em Redes 5G,Desenvolvimento e avaliação de um framework de proteção de tráfego em ambientes de alta densidade.
+CAAE,Nome Pesquisador,Titulo,Descricao,RELATOR,Reunião:01/09,Reunião:29/09,Reunião:06/10
+44556677.1.0000.0021,Larissa Monteiro,Avaliação de Algoritmos em Ambientes Educacionais,Investigação sobre o uso de modelos adaptativos.,João Relator,PENDENCIA,,
+22001133.4.0000.0032,Ricardo Menezes,Terapias Inovadoras para Insuficiência Cardíaca,Estudo preliminar sobre a resposta clínica.,Maria Relatora,,,APROVADO
+55443322.9.0000.0045,Beatriz Lima,Gestão de Energia em Centros Urbanos,Análise das práticas de eficiência energética.,,,PENDÊNCIA,
+33009988.7.0000.0019,Fernando Alves,Privacidade em Redes 5G,Desenvolvimento e avaliação de framework.,Carlos Relator,REPROVADO,,

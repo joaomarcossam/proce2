@@ -1,0 +1,33 @@
+{% extends 'core/base.html' %}
+{% block title %}Editar Projeto{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h3 class="mb-4">Editar Projeto: {{ projeto.titulo }}</h3>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <h5 class="text-muted">Dados Básicos</h5>
+                <div class="mb-3">{{ form.titulo.label_tag }}{{ form.titulo }}</div>
+                <div class="row">
+                    <div class="col-md-6">{{ form.caae.label_tag }}{{ form.caae }}</div>
+                    <div class="col-md-6">
+                        <label class="form-label">Status Atual</label>
+                        {{ form.status_inicial }}
+                    </div>
+                </div>
+                <div class="mb-3">{{ form.descricao.label_tag }}{{ form.descricao }}</div>
+                <h5 class="text-muted mt-4">Pesquisador</h5>
+                <div class="row">
+                    <div class="col-md-6">{{ form.pesquisador_nome.label_tag }}{{ form.pesquisador_nome }}</div>
+                    <div class="col-md-6">{{ form.pesquisador_email.label_tag }}{{ form.pesquisador_email }}</div>
+                </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'detalhe_projeto' projeto.id %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

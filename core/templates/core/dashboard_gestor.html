@@ -15,7 +15,6 @@
     </div>
 </div>
 
-<!-- NAVEGAÇÃO POR ABAS -->
 <ul class="nav nav-tabs mb-4" id="gestorTab" role="tablist">
     <li class="nav-item">
         <button class="nav-link active" id="projetos-tab" data-bs-toggle="tab" data-bs-target="#projetos" type="button">
@@ -31,10 +30,8 @@
 
 <div class="tab-content" id="gestorTabContent">
     
-    <!-- ABA 1: PROJETOS -->
     <div class="tab-pane fade show active" id="projetos" role="tabpanel">
         
-        <!-- Busca -->
         <div class="card mb-4 bg-light">
             <div class="card-body">
                 <div class="row g-2">
@@ -44,8 +41,8 @@
                             <option value="titulo">Nome do Projeto</option>
                             <option value="caae">CAAE</option>
                             <option value="pesquisador">Pesquisador</option>
-                            <option value="relator_nome">Nome do Relator</option>
-                            <option value="relator_email">E-mail do Relator</option>
+                            <option value="relator-nome">Nome do Relator</option>
+                            <option value="relator-email">E-mail do Relator</option>
                         </select>
                     </div>
                     <div class="col-md-9">
@@ -55,34 +52,40 @@
             </div>
         </div>
 
-        <!-- Sub-Abas (Pills) -->
         <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
             <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pills-aguardando">Aguardando <span class="badge bg-secondary ms-1">{{ itens_novos|length }}</span></button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-analise">Em Análise <span class="badge bg-secondary ms-1">{{ itens_em_analise|length }}</span></button></li>
+            
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-pendentes">Pendentes <span class="badge bg-danger ms-1">{{ itens_pendentes|length }}</span></button></li>
+            
             <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-concluidos">Concluídos <span class="badge bg-secondary ms-1">{{ itens_concluidos|length }}</span></button></li>
         </ul>
 
         <div class="tab-content">
-            <!-- TABELAS MODULARES -->
-            <!-- CORREÇÃO: Garantindo que 'lista_itens' receba a variável correta -->
             <div class="tab-pane fade show active" id="pills-aguardando">
                 {% include "core/includes/tabela_projetos.html" with lista_itens=itens_novos titulo="Aguardando Designação" cor="warning" tipo="aguardando" msg_vazia="Nenhum item aguardando." %}
             </div>
             <div class="tab-pane fade" id="pills-analise">
                 {% include "core/includes/tabela_projetos.html" with lista_itens=itens_em_analise titulo="Em Análise" cor="info" tipo="analise" msg_vazia="Nenhum item em análise." %}
             </div>
+            
+            <div class="tab-pane fade" id="pills-pendentes">
+                {% include "core/includes/tabela_projetos.html" with lista_itens=itens_pendentes titulo="Pendentes (Com Pesquisador)" cor="danger" tipo="pendente" msg_vazia="Nenhum projeto pendente." %}
+            </div>
+
             <div class="tab-pane fade" id="pills-concluidos">
                 {% include "core/includes/tabela_projetos.html" with lista_itens=itens_concluidos titulo="Concluídos" cor="success" tipo="concluido" msg_vazia="Nenhum item concluído." %}
             </div>
         </div>
     </div>
 
-    <!-- ABA 2: RELATORES -->
     <div class="tab-pane fade" id="relatores" role="tabpanel">
         <div class="card border-primary">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <strong>Visão Geral dos Relatores</strong>
-                <a href="{% url 'exportar_relatores' %}" class="btn btn-light btn-sm text-primary"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar Excel</a>
+                <a href="{% url 'exportar_relatores' %}" class="btn btn-light btn-sm text-primary">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Exportar Excel
+                </a>
             </div>
             <div class="card-body">
                 <input type="text" id="searchRelatorInput" class="form-control mb-3" placeholder="Filtrar relator...">
@@ -127,7 +130,6 @@
 </div>
 
 <script>
-    // Filtro de Projetos
     function filterProjects() {
         let filterValue = document.getElementById("searchInput").value.toLowerCase();
         let filterField = document.getElementById("filterField").value;
@@ -150,7 +152,6 @@
     document.getElementById("searchInput").addEventListener("keyup", filterProjects);
     document.getElementById("filterField").addEventListener("change", filterProjects);
 
-    // Filtro de Relatores
     document.getElementById('searchRelatorInput').addEventListener('keyup', function() {
         let filter = this.value.toLowerCase();
         let items = document.querySelectorAll('.relator-item');

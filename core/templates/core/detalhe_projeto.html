@@ -1,125 +1,133 @@
 {% extends 'core/base.html' %}
 
-{% block title %}{{ projeto.titulo }}{% endblock %}
+{% block title %}Detalhe do Projeto{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-10">
-        
-        <!-- CABEÇALHO E BOTÕES -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0">{{ projeto.titulo }}</h2>
-            <div>
-                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar
-                </a>
-                
-                <!-- Botão de Nova Emenda (Visível para todos ou restrito, conforme sua regra) -->
-                <a href="{% url 'cadastrar_emenda' projeto.id %}" class="btn btn-warning ms-2">
-                    <i class="bi bi-plus-circle"></i> Nova Emenda
-                </a>
-            </div>
-        </div>
-
-        <!-- CARTÃO DE DETALHES DO PROJETO -->
+<div class="row">
+    <div class="col-md-7">
         <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-light">
-                <strong>Dados do Projeto</strong>
+            <div class="card-header bg-primary text-white d-flex justify-content-between">
+                <span>Informações do Projeto</span>
+                {% if projeto.status != 'novo' and projeto.status != 'em_analise' %}
+                    <span class="badge bg-light text-dark">{{ projeto.get_status_display }}</span>
+                {% endif %}
             </div>
             <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <p class="mb-1"><strong>Status:</strong> 
-                            <span class="badge {% if projeto.status == 'aprovado' %}bg-success{% elif projeto.status == 'reprovado' %}bg-danger{% else %}bg-info{% endif %}">
-                                {{ projeto.get_status_display }}
-                            </span>
-                        </p>
-                        <p class="mb-1"><strong>CAAE:</strong> {{ projeto.caae }}</p>
-                        <p class="mb-1"><strong>Protocolo:</strong> {{ projeto.protocolo|default:"-" }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="mb-1"><strong>Data Submissão:</strong> {{ projeto.data_submissao|date:"d/m/Y H:i" }}</p>
-                        <p class="mb-1"><strong>Relator:</strong> {{ projeto.relator_designado.username|default:"Não designado" }}</p>
-                    </div>
-                </div>
+                <h4 class="card-title">{{ projeto.titulo }}</h4>
+                <p class="text-muted mb-4"><i class="bi bi-person"></i> {{ projeto.pesquisador.nome }} | CAAE: {{ projeto.caae }}</p>
 
+                <dl class="row">
+                    <dt class="col-sm-4">E-mail Pesquisador:</dt>
+                    <dd class="col-sm-8">{{ projeto.pesquisador.email }}</dd>
+
+                    <dt class="col-sm-4">Telefone:</dt>
+                    <dd class="col-sm-8">{{ projeto.pesquisador.telefone|default:"-" }}</dd>
+
+                    <dt class="col-sm-4">Data Submissão:</dt>
+                    <dd class="col-sm-8">{{ projeto.data_submissao|date:"d/m/Y H:i" }}</dd>
+
+                    <dt class="col-sm-4">Relator Designado:</dt>
+                    <dd class="col-sm-8">
+                        {% if projeto.relator_designado %}
+                            {{ projeto.relator_designado.first_name|default:projeto.relator_designado.username }}
+                        {% else %}
+                            <span class="text-warning">Não designado</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-4">Arquivo do Projeto:</dt>
+                    <dd class="col-sm-8">
+                        {% if projeto.arquivo_pdf %}
+                            <a href="{{ projeto.arquivo_pdf.url }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                                <i class="bi bi-file-pdf"></i> Visualizar PDF
+                            </a>
+                        {% else %}
+                            <span class="text-muted">Sem arquivo</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+                
                 <hr>
-
-                <h5 class="text-muted mb-3">Pesquisador</h5>
-                <p class="mb-1"><strong>Nome:</strong> {{ projeto.pesquisador.nome }}</p>
-                <p class="mb-1"><strong>E-mail:</strong> {{ projeto.pesquisador.email }}</p>
-                
-                {% if projeto.arquivo_pdf %}
-                    <div class="mt-4">
-                        <a href="{{ projeto.arquivo_pdf.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-file-earmark-pdf-fill"></i> Baixar PDF do Projeto
-                        </a>
-                    </div>
+                <h5>Descrição</h5>
+                <p>{{ projeto.descricao }}</p>
+            </div>
+            <div class="card-footer text-end">
+                {% if is_gestor %}
+                    <a href="{% url 'editar_projeto' projeto.id %}" class="btn btn-outline-primary btn-sm">Editar Projeto</a>
                 {% endif %}
-                
-                <div class="mt-4 p-3 bg-light rounded border">
-                    <h6>Descrição:</h6>
-                    <p class="mb-0 text-justify">{{ projeto.descricao|linebreaksbr }}</p>
-                </div>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm">Voltar</a>
             </div>
         </div>
 
-        <!-- SEÇÃO: HISTÓRICO DE PARECERES (AQUI ESTÁ A JUSTIFICATIVA) -->
-        <h4 class="mb-3"><i class="bi bi-clock-history"></i> Histórico de Pareceres</h4>
-        
-        {% if pareceres %}
-            {% for parecer in pareceres %}
-                <div class="card mb-3 border-{% if parecer.decisao == 'aprovado' %}success{% elif parecer.decisao == 'reprovado' %}danger{% else %}secondary{% endif %}">
-                    <div class="card-header {% if parecer.decisao == 'aprovado' %}bg-success{% elif parecer.decisao == 'reprovado' %}bg-danger{% else %}bg-secondary{% endif %} text-white d-flex justify-content-between align-items-center">
-                        <span>
-                            <i class="bi bi-{% if parecer.decisao == 'aprovado' %}check-circle{% elif parecer.decisao == 'reprovado' %}x-circle{% else %}question-circle{% endif %}"></i>
-                            <strong>Decisão: {{ parecer.get_decisao_display }}</strong>
-                        </span>
-                        <small>{{ parecer.data_parecer|date:"d/m/Y H:i" }}</small>
-                    </div>
-                    <div class="card-body">
-                        <h6 class="card-subtitle mb-2 text-muted">Relator: {{ parecer.relator.first_name|default:parecer.relator.username }}</h6>
-                        <hr>
-                        <div class="p-3 bg-light rounded fst-italic border-start border-4 border-{% if parecer.decisao == 'aprovado' %}success{% elif parecer.decisao == 'reprovado' %}danger{% else %}secondary{% endif %}">
-                            <strong class="d-block mb-2 not-italic">Justificativa:</strong>
-                            "{{ parecer.justificativa }}"
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="alert alert-secondary text-center">
-                Nenhum parecer foi emitido para este projeto até o momento.
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <span>Emendas</span>
+                {% if is_gestor %}
+                <a href="{% url 'cadastrar_emenda' projeto.id %}" class="btn btn-sm btn-light text-dark">Nova Emenda</a>
+                {% endif %}
             </div>
-        {% endif %}
-
-        <!-- SEÇÃO: EMENDAS ATUALIZADA -->
-        {% if projeto.emendas.all %}
-            <h4 class="mt-5 mb-3"><i class="bi bi-paperclip"></i> Emendas</h4>
-            <div class="list-group mb-5">
+            <ul class="list-group list-group-flush">
                 {% for emenda in projeto.emendas.all %}
-                    <div class="list-group-item list-group-item-action" aria-current="true">
-                        <div class="d-flex w-100 justify-content-between align-items-center">
-                            <h5 class="mb-1">
-                                {{ emenda.titulo }}
-                                <!-- Badge de Status da Emenda -->
-                                <span class="badge {% if emenda.status == 'aprovada' %}bg-success{% elif emenda.status == 'reprovada' %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-2" style="font-size: 0.8em;">
-                                    {{ emenda.get_status_display }}
-                                </span>
-                            </h5>
-                            <small>{{ emenda.data_submissao|date:"d/m/Y" }}</small>
-                        </div>
-                        <p class="mb-1">{{ emenda.descricao }}</p>
-                        {% if emenda.arquivo_pdf %}
-                            <a href="{{ emenda.arquivo_pdf.url }}" target="_blank" class="badge bg-primary text-decoration-none mt-2">
-                                <i class="bi bi-download"></i> PDF da Emenda
-                            </a>
-                        {% endif %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong><a href="{% url 'detalhe_emenda' emenda.id %}" class="text-decoration-none">{{ emenda.titulo }}</a></strong>
+                        <br>
+                        <small class="text-muted">{{ emenda.get_status_display }} - {{ emenda.data_submissao|date:"d/m/Y" }}</small>
                     </div>
+                    {% if emenda.status == 'pendente' %}
+                        <span class="badge bg-warning text-dark">Pendente</span>
+                    {% elif emenda.status == 'aprovada' %}
+                        <span class="badge bg-success">Aprovada</span>
+                    {% else %}
+                        <span class="badge bg-danger">Reprovada</span>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted text-center">Nenhuma emenda cadastrada.</li>
                 {% endfor %}
-            </div>
-        {% endif %}
+            </ul>
+        </div>
+    </div>
 
+    <div class="col-md-5">
+        <h5 class="mb-3"><i class="bi bi-clock-history"></i> Histórico de Pareceres</h5>
+        
+        <div class="list-group">
+            {% for parecer in pareceres %}
+            <div class="list-group-item list-group-item-action flex-column align-items-start 
+                {% if parecer.decisao == 'aprovado' %}border-start border-success border-4
+                {% elif parecer.decisao == 'reprovado' %}border-start border-danger border-4
+                {% else %}border-start border-warning border-4{% endif %}">
+                
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1 fw-bold">
+                        {% if parecer.decisao == 'aprovado' %}Aprovado
+                        {% elif parecer.decisao == 'reprovado' %}Reprovado
+                        {% else %}Pendência{% endif %}
+                    </h6>
+                    <small class="text-muted">{{ parecer.data_parecer|date:"d/m/Y H:i" }}</small>
+                </div>
+                
+                <p class="mb-1 text-break">{{ parecer.justificativa|linebreaksbr }}</p>
+                
+                <div class="mt-2 d-flex justify-content-between align-items-center">
+                    <small class="text-primary">
+                        <i class="bi bi-person-check-fill"></i> {{ parecer.relator.first_name|default:parecer.relator.username }}
+                    </small>
+                    
+                    {% if parecer.arquivo_parecer %}
+                        <a href="{{ parecer.arquivo_parecer.url }}" target="_blank" class="btn btn-sm btn-outline-dark" title="Baixar Parecer Assinado">
+                            <i class="bi bi-paperclip"></i> Ver Anexo
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-light text-center border">
+                Nenhum parecer emitido até o momento.
+            </div>
+            {% endfor %}
+        </div>
     </div>
 </div>
 {% endblock %}
